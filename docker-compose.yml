@@ -121,6 +121,10 @@ services:
       APP_DEBUG: ${APP_DEBUG:-true}
       XDEBUG_MODE: ${APP_DEBUG:+debug}
 
+      COMPOSER_PROCESS_TIMEOUT: 1800 #RETIRA EM PRODUÇÃO, O COMPOSER INSTALL PODE LEVAR MAIS DE 60S NA PRIMEIRA EXECUÇÃO
+      COMPOSER_MEMORY_LIMIT: -1 #RETIRA EM PRODUÇÃO, O COMPOSER INSTALL PODE CONSUMIR MUITA MEMÓRIA NA PRIMEIRA EXECUÇÃO
+      COMPOSER_ALLOW_SUPERUSER: 1 #PERMITE EXECUTAR O COMPOSER COMO ROOT DENTRO DO CONTAINER, EVITANDO ERROS DE PERMISSÃO
+
       # Banco de dados
       DB_CONNECTION: ${DB_CONNECTION}
       DB_HOST: ${DB_HOST}
@@ -150,7 +154,7 @@ services:
     # Sistemas de arquivos temporários montados em RAM, eliminando I/O de disco
     tmpfs:
       # Sessões PHP, uploads temporários e arquivos transitórios vão para RAM
-      - /tmp:size=64m,mode=1777
+      - /tmp:size=2g,mode=1777
 
     # Limites de recursos do container calculados com base no tuning do PHP-FPM
     # 10 workers × memory_limit 256MB = 2.5GB teórico; 512MB cobre o ambiente de desenvolvimento
