@@ -16,6 +16,7 @@ $app->addRoutingMiddleware();
 
 $debug = ($_ENV['APP_DEBUG'] ?? 'false') === 'true';
 
+
 $app->addErrorMiddleware($debug, $debug, $debug);
 
 require __DIR__ . '/helpers/settings.php';

@@ -31,7 +31,6 @@ final class Login extends Base
         if (isset($_SESSION['login_locked_until']) && $_SESSION['login_locked_until'] > time()) {
             return $this->json($response, ['status' => false, 'msg' => 'Muitas tentativas. Tente novamente em alguns minutos.', 'id' => 0], 429);
         }
-
         try {
             # Começa a montar a query: SELECT * FROM vw_user
             $qb = \app\database\DB::select('*')
@@ -46,7 +45,7 @@ final class Login extends Base
             # WHERE cpf = :login OR email = :login OR whatsapp = :login
             $qb->where('cpf = ' . $login)
                 ->orWhere('email = '    . $login)
-                ->orWhere('whatsapp = ' . $login);
+                ->orWhere('telefone = ' . $login);
 
             # Executa a query e busca um único registro (a primeira linha encontrada)
             $user = $qb->fetchAssociative();
@@ -67,6 +66,15 @@ final class Login extends Base
                     $_SESSION['login_attempts'] = 0;
                 }
                 return $this->json($response, ['status' => false, 'msg' => 'Verifique seu e-mail e senha e tente novamente!', 'id' => 0], 403);
+            }
+
+            # Verifica se o usuário está ativo
+            if (!$user['ativo']) {
+                return $this->json($response, [
+                    'status' => false,
+                    'msg'    => 'Seu acesso ainda não foi liberado. Aguarde a aprovação do administrador.',
+                    'id'     => 0,
+                ], 403);
             }
 
             # Login válido: zera contadores de tentativa e lockout
@@ -140,55 +148,222 @@ final class Login extends Base
             error_log('[auth][JWT] ' . $e->getMessage());
             return $this->json($response, ['status' => false, 'msg' => 'Não foi possível concluir o login. Tente novamente.', 'id' => 0], 500);
         } catch (\Throwable $e) {
-            # Qualquer outra falha inesperada: loga e responde de forma genérica
             error_log('[auth][GERAL] ' . $e->getMessage());
-            return $this->json($response, ['status' => false, 'msg' => 'Erro inesperado. Tente novamente: ' . $e->getMessage(), 'id' => 0], 500);
+            return $this->json($response, ['status' => false, 'msg' => 'Erro inesperado. Tente novamente.', 'id' => 0], 500);
         }
+    }
+    public function logout($request, $response)
+    {
+        $_SESSION = [];
+        session_destroy();
+
+        setcookie('auth_token', '', [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'domain'   => $_SERVER['HTTP_HOST'],
+            'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        return $response
+            ->withHeader('Location', '/login')
+            ->withStatus(302);
     }
 
     public function preRegister($request, $response)
     {
         $form = $request->getParsedBody();
-        #Captura os dados informado pelo usuário no formulário de pré-cadastro
-        $nome      = $form['nome'] ?? null;
+
+        // Captura os dados informados pelo usuário no formulário de pré-cadastro
+        $nome      = $form['nome']      ?? null;
         $sobrenome = $form['sobrenome'] ?? null;
-        $cpf       = $form['cpf'] ?? null;
-        $rg        = $form['rg'] ?? null;
-        $senha     = $form['senha'] ?? null;
-        #Dados de contato.
-        $email     = $form['email'] ?? null;
-        $telefone  = $form['telefone'] ?? null;
-        #Criamos o array associativo com os dados do usuário, onde a 
-        #chave é o nome da coluna no banco de dados e o valor é o dado 
-        #informado pelo usuário.
+        $cpf       = $form['cpf']       ?? null;
+        $rg        = $form['rg']        ?? null;
+        $senha     = $form['senhaCadastro']  ?? null;
+        $email     = $form['email']     ?? null;
+        $telefone  = $form['telefone']  ?? null;
+
+        // Criamos o array associativo com os dados do usuário, onde a
+        // chave é o nome da coluna no banco de dados e o valor é o dado
+        // informado pelo usuário.
         $DataUser = [
-            'nome'      => $nome,
-            'sobrenome' => $sobrenome,
-            'cpf'       => $cpf,
-            'rg'        => $rg,
-            'senha'     => password_hash($senha, PASSWORD_DEFAULT)
+            'nome'         => $nome,
+            'sobrenome'    => $sobrenome,
+            'cpf'          => $cpf,
+            'rg'           => $rg,
+            'senha'        => password_hash($senha, PASSWORD_DEFAULT),
+            'criado_em'    => date('Y-m-d H:i:s'),
+            'atualizado_em' => date('Y-m-d H:i:s'),
         ];
-        $id_usuario = 0;
-        #Insere os dados no data base com o Docrine e recebe o ID do usuário criado.
-        $id_usuario = \app\database\DB::connection()->insert('users', $DataUser);
-        #Insere os dados do email do usuário na base.
-        $DataEmail = [
-            'id_usuario' => $id_usuario,
-            'tipo' => 'EMAIL',
-            'contato' => $email
-        ];
-        \app\database\DB::connection()->insert('contact', $DataEmail);
-        #Insere os dados do telefone do usuário na base.
-        $DataTel = [
-            'id_usuario' => $id_usuario,
-            'tipo' => 'TELEFONE',
-            'contato' => $telefone
-        ];
-        \app\database\DB::connection()->insert('contact', $DataTel);
-        #Retorna a resposta de sucesso ao cliente
-        return $this->json($response, [
-            'status' => true,
-            'msg' => 'Usuário cadastrado com sucesso!'
-        ], 200);
+
+        try {
+            $conn = \app\database\DB::connection();
+            $conn->beginTransaction();
+
+            // Insere os dados no database com o Doctrine e recebe o ID do usuário criado.
+            $conn->insert('users', $DataUser);
+            $id_usuario = (int) $conn->lastInsertId();
+
+            // Insere os dados do email do usuário na base.
+            if (!empty($email)) {
+                $DataEmail = [
+                    'id_usuario'   => $id_usuario,
+                    'tipo'         => 'EMAIL',
+                    'contato'      => $email,
+                    'criado_em'    => date('Y-m-d H:i:s'),
+                    'atualizado_em' => date('Y-m-d H:i:s'),
+                ];
+                $conn->insert('contact', $DataEmail);
+            }
+
+            // Insere os dados do telefone do usuário na base.
+            if (!empty($telefone)) {
+                $DataTel = [
+                    'id_usuario'   => $id_usuario,
+                    'tipo'         => 'TELEFONE',
+                    'contato'      => $telefone,
+                    'criado_em'    => date('Y-m-d H:i:s'),
+                    'atualizado_em' => date('Y-m-d H:i:s'),
+                ];
+                $conn->insert('contact', $DataTel);
+            }
+
+            $conn->commit();
+
+            return $this->json($response, [
+                'status' => true,
+                'msg'    => 'Pré-cadastro realizado com sucesso!',
+                'id'     => $id_usuario,
+            ], 201);
+        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
+            $conn->rollBack();
+            return $this->json($response, [
+                'status' => false,
+                'msg'    => 'CPF ou contato já cadastrado.',
+                'id'     => 0,
+            ], 409);
+        } catch (\Throwable $e) {
+            $conn->rollBack();
+            error_log('[preRegister] ' . $e->getMessage());
+            return $this->json($response, [
+                'status' => false,
+                'msg'    => 'Erro ao realizar pré-cadastro. Tente novamente.',
+                'id'     => 0,
+            ], 500);
+        }
+    }
+    public function google($request, $response)
+    {
+        $form = $request->getParsedBody();
+
+        $credential        = $form['credential']    ?? null;
+        $form_g_csrf_token = $form['g_csrf_token']  ?? null;
+        $cookie_g_csrf_token = $_COOKIE['g_csrf_token'] ?? null;
+        $google_client_id  = $_ENV['GOOGLE_CLIENT_ID'] ?? null;
+
+        // Valida presença dos dados obrigatórios
+        if (is_null($credential) || is_null($form_g_csrf_token) || is_null($cookie_g_csrf_token)) {
+            return $this->json($response, ['status' => false, 'msg' => 'Dados do Google ausentes.', 'id' => 0], 400);
+        }
+
+        // Valida o CSRF token do Google (cookie deve bater com o campo do formulário)
+        if (!hash_equals($cookie_g_csrf_token, $form_g_csrf_token)) {
+            return $this->json($response, ['status' => false, 'msg' => 'Token CSRF inválido.', 'id' => 0], 403);
+        }
+
+        try {
+            $provider = new \League\OAuth2\Client\Provider\Google([
+                'clientId'     => $google_client_id,
+                'clientSecret' => '',
+                'redirectUri'  => '',
+            ]);
+
+            $httpResponse = $provider->getHttpClient()->request(
+                'GET',
+                'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($credential),
+                ['timeout' => 3, 'connect_timeout' => 2]
+            );
+
+            $claims = json_decode((string) $httpResponse->getBody(), true, flags: JSON_THROW_ON_ERROR);
+
+            // Valida que o token foi emitido para o seu app
+            if (($claims['aud'] ?? '') !== $google_client_id) {
+                return $this->json($response, ['status' => false, 'msg' => 'Token inválido.', 'id' => 0], 403);
+            }
+
+            $email = $claims['email'] ?? null;
+
+            if (is_null($email)) {
+                return $this->json($response, ['status' => false, 'msg' => 'E-mail não disponível na conta Google.', 'id' => 0], 400);
+            }
+
+            // Busca o usuário na vw_user pelo e-mail do Google
+            $qb = \app\database\DB::select('*')->from('vw_user');
+            $qb->where('email = ' . $qb->createNamedParameter($email));
+            $user = $qb->fetchAssociative();
+
+            // Nenhuma conta encontrada com esse e-mail
+            if (!$user) {
+                return $this->json($response, [
+                    'status' => false,
+                    'msg'    => 'Nenhuma conta encontrada com este e-mail do Google. Faça o pré-cadastro.',
+                    'id'     => 0,
+                ], 404);
+            }
+
+            // Conta encontrada mas ainda não aprovada pelo administrador
+            if (!$user['ativo']) {
+                return $this->json($response, [
+                    'status' => false,
+                    'msg'    => 'Por enquanto você ainda não está autorizado, por favor aguarde...',
+                    'id'     => 0,
+                ], 403);
+            }
+
+            // Login válido — cria a sessão
+            session_regenerate_id(true);
+
+            unset($user['senha']);
+            $_SESSION['user']           = $user;
+            $_SESSION['user']['logado'] = true;
+
+            $lifetime = (int) (ini_get('session.gc_maxlifetime') ?: 3600);
+
+            $payload_jwt = [
+                'iat' => time(),
+                'exp' => time() + $lifetime,
+                'sub' => (string) $user['id'],
+            ];
+
+            $jwt      = \Firebase\JWT\JWT::encode($payload_jwt, SECRET_KEY, 'HS256');
+            $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
+
+            setcookie('auth_token', $jwt, [
+                'expires'  => time() + $lifetime,
+                'path'     => '/',
+                'domain'   => $_SERVER['HTTP_HOST'],
+                'secure'   => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+
+            $_SESSION['user']['sessao_criada_em'] = (new \DateTime())->format('Y-m-d H:i:s');
+            $_SESSION['user']['sessao_expira_em'] = (new \DateTime())->modify("+{$lifetime} seconds")->format('Y-m-d H:i:s');
+
+            // Direciona para /adm se administrador, ou /home para usuários comuns
+            $destino = $user['administrador'] ? '/adm' : '/home';
+
+            return $response
+                ->withHeader('Location', $destino)
+                ->withStatus(302);
+        } catch (\Throwable $e) {
+            error_log('[auth][GOOGLE] ' . $e->getMessage());
+            return $this->json($response, [
+                'status' => false,
+                'msg'    => 'Falha na autenticação com o Google. Tente novamente.',
+                'id'     => 0,
+            ], 500);
+        }
     }
 }

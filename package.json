@@ -1,9 +1,9 @@
 {
-  "name": "jaiminho3",
+  "name": "cat",
   "version": "1.0.0",
-  "description": "Repositório de apoio à aula Técnicas de Teste de Software, preparado para apresentação aos alunos do Senac.",
+  "description": "cat",
   "license": "MIT",
-  "author": "WILTON WILL DE PAULO",
+  "author": "RYAN DE SOUZA VASQUES",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

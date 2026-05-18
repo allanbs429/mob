@@ -154,14 +154,22 @@ export default class FindCompany {
             });
             return;
         }
-        let html = ``;
+
+        // Se o elemento de busca não existir na página, não faz nada
+        const cnaeSearchEl = document.getElementById(this.cnaeSearch);
+        if (!cnaeSearchEl) return;
+
+        const cnaeValueEl = document.getElementById(this.cnaeValue);
+        const currentValue = cnaeValueEl ? cnaeValueEl.value : '';
+
+        let html = '';
         cnaeData.forEach((item) => {
-            (document.getElementById(this.cnaeValue).value == item.id) ?
-                html += `<option value="${item.id}" selected >${item.id} - ${item.descricao}</option>`
-                :
-                html += `<option value="${item.id}">${item.id} - ${item.descricao}</option>`;
+            (currentValue == item.id)
+                ? html += `<option value="${item.id}" selected>${item.id} - ${item.descricao}</option>`
+                : html += `<option value="${item.id}">${item.id} - ${item.descricao}</option>`;
         });
-        document.getElementById(this.cnaeSearch).innerHTML = html;
+
+        cnaeSearchEl.innerHTML = html;
         $(`#${this.cnaeSearch}`).select2({
             theme: 'bootstrap-5',
             language: 'pt-BR',
@@ -172,7 +180,7 @@ export default class FindCompany {
         });
         $('.select2bs4').on('select2:open', function (e) {
             $('.select2-search__field').attr('placeholder', 'Digite para pesquisar...');
-            let inputElement = document.querySelector(`input.select2-search__field`);
+            let inputElement = document.querySelector('input.select2-search__field');
             inputElement.focus();
         });
     }

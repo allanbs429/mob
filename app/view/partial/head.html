@@ -1,6 +1,6 @@
 <nav class="navbar bg-primary navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">Senac</a>
+        <a class="navbar-brand" href="/">Cat <i class="fa-brands fa-github"></i></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -25,10 +25,32 @@
                                 <i class="fa-solid fa-user-plus"></i>
                                 Cliente
                             </a>
+                            <a class="dropdown-item" href="/usuario/lista">
+                                <i class="fa-solid fa-users"></i>
+                                Usuário
+                            </a>
+                            <a class="dropdown-item" href="/fornecedor/lista">
+                                <i class="fa-solid fa-industry"></i>
+                                Fornecedor
+                            </a>
+                            <a class="dropdown-item" href="/empresa/lista">
+                                <i class="fa-solid fa-briefcase"></i>
+                                Empresa
+                            </a>
                         </li>
                     </ul>
                 </li>
             </ul>
+
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link text-black" href="/authentication/logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        Sair
+                    </a>
+                </li>
+            </ul>
+
         </div>
     </div>
 </nav>
