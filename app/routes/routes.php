@@ -52,3 +52,13 @@ $app->group('/usuario', function (Slim\Routing\RouteCollectorProxy $group) {
     $group->post('/delete',       app\controller\Users::class . ':delete');
     $group->post('/listingdata',  app\controller\Users::class . ':listingdata');
 })->add(app\middleware\Middleware::web());
+
+$app->group('/produto', function (Slim\Routing\RouteCollectorProxy $group) {
+    $group->get('/lista',         app\controller\Product::class . ':list');
+    $group->get('/detalhes/{id}', app\controller\Product::class . ':details');
+    $group->get('/detalhes',      app\controller\Product::class . ':details');
+    $group->post('/insert',       app\controller\Product::class . ':insert');
+    $group->post('/update',       app\controller\Product::class . ':update');
+    $group->post('/delete',       app\controller\Product::class . ':delete');
+    $group->post('/listingdata',  app\controller\Product::class . ':listingdata');
+})->add(app\middleware\Middleware::web());

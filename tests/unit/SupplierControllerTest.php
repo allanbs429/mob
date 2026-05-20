@@ -6,22 +6,22 @@ declare(strict_types=1);
 use Slim\Psr7\Factory\RequestFactory;
 use Slim\Psr7\Factory\ResponseFactory;
 
-test('insertCustomer com dados validos retorna 200 com status true', function () {
+test('insertSupplier com dados validos retorna 200 com status true', function () {
     $request = (new RequestFactory())
-        ->createRequest('POST', '/customer/insert')
+        ->createRequest('POST', '/supplier/insert')
         ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
         ->withParsedBody([
             'nomeExibicao' => 'Calango',
-            'nomeLegal' => 'E CIA',
-            'numeroDocumento' => '342.234.252-32',
-            'registroSecundario' => '2434',
-            'dataRegistro' => '12/09/1990',
+            'nomeLegal' => 'E CIA LTDA',
+            'numeroDocumento' => '423.643.123-34',
+            'registroSecundario' => '98765',
+            'dataRegistro' => '10/05/1990',
             'ativo' => 'true'
         ]);
 
     $response = (new ResponseFactory())->createResponse();
 
-    $result = (new app\controller\Customer())->insert($request, $response);
+    $result = (new app\controller\Supplier())->insert($request, $response);
 
     $result->getBody()->rewind();
 
@@ -33,7 +33,7 @@ test('insertCustomer com dados validos retorna 200 com status true', function ()
 
     expect($json['status'])->toBeTrue();
 
-    expect($json['msg'])->toContain('Salvo com sucesso!');
+    expect($json['msg'])->toContain('Fornecedor salvo com sucesso!');
 
 
 });

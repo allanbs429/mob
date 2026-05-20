@@ -6,22 +6,21 @@ declare(strict_types=1);
 use Slim\Psr7\Factory\RequestFactory;
 use Slim\Psr7\Factory\ResponseFactory;
 
-test('insertCustomer com dados validos retorna 200 com status true', function () {
+test('insertEnterprise com dados validos retorna 200 com status true', function () {
     $request = (new RequestFactory())
-        ->createRequest('POST', '/customer/insert')
+        ->createRequest('POST', '/enterprise/insert')
         ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
         ->withParsedBody([
-            'nomeExibicao' => 'Calango',
-            'nomeLegal' => 'E CIA',
-            'numeroDocumento' => '342.234.252-32',
-            'registroSecundario' => '2434',
-            'dataRegistro' => '12/09/1990',
+            'nomeExibicao' => 'Rango',
+            'nomeLegal' => 'BRABO CIA',
+            'numeroDocumento' => '895.142.909-78',
+            'registroSecundario' => '1231',
             'ativo' => 'true'
         ]);
 
     $response = (new ResponseFactory())->createResponse();
 
-    $result = (new app\controller\Customer())->insert($request, $response);
+    $result = (new app\controller\Enterprise())->insert($request, $response);
 
     $result->getBody()->rewind();
 

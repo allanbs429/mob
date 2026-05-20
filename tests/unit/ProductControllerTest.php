@@ -6,22 +6,23 @@ declare(strict_types=1);
 use Slim\Psr7\Factory\RequestFactory;
 use Slim\Psr7\Factory\ResponseFactory;
 
-test('insertCustomer com dados validos retorna 200 com status true', function () {
+test('insertProduct com dados validos retorna 200 com status true', function () {
     $request = (new RequestFactory())
-        ->createRequest('POST', '/customer/insert')
+        ->createRequest('POST', '/produto/insert')
         ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
         ->withParsedBody([
-            'nomeExibicao' => 'Calango',
-            'nomeLegal' => 'E CIA',
-            'numeroDocumento' => '342.234.252-32',
-            'registroSecundario' => '2434',
-            'dataRegistro' => '12/09/1990',
+            'nome' => 'Baleia',
+            'codigo_barra' => '234234',
+            'unidade' => '5',
+            'preco_compra' => '1000.00',
+            'preco_venda' => '2000.00',
+            'descricao' => 'Carne de baleia',
             'ativo' => 'true'
         ]);
 
     $response = (new ResponseFactory())->createResponse();
 
-    $result = (new app\controller\Customer())->insert($request, $response);
+    $result = (new app\controller\Product())->insert($request, $response);
 
     $result->getBody()->rewind();
 
