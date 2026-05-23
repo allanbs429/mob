@@ -22,7 +22,7 @@ final class Product extends Base
         $action = ($id === null) ? 'c' : 'e';
         $product = [];
         if (!is_null($id)) {
-            $qb = \app\database\DB::select('*')->from('product');
+            $qb = \app\database\DB::select('*')->from('products');
 
             $product = $qb
                 ->where('id = ' . $qb->createPositionalParameter($id, \Doctrine\DBAL\ParameterType::INTEGER))
@@ -43,14 +43,16 @@ final class Product extends Base
     {
         $form = $request->getParsedBody();
         $FieldsAndValues = [
-            'fantasia'     => $form['nomeExibicao'],
-            'razao_social' => $form['nomeLegal']          ?? null,
-            'cnpj'         => $form['numeroDocumento']    ?? null,
-            'ie'           => $form['registroSecundario'] ?? null,
+            'nome'     => $form['nome'],
+            'codigo_barra' => $form['codigo_barra']          ?? null,
+            'unidade'         => $form['unidade']    ?? null,
+            'preco_compra'           => $form['preco_compra'] ?? null,
+            'preco_venda'         => $form['preco_venda'] ?? null,
+            'descricao'         => $form['descricao'] ?? null,
             'ativo'         => (int)(($form['ativo']         ?? '') === 'true'),
         ];
         try {
-            $IsInserted = \app\database\DB::connection()->insert('product', $FieldsAndValues);
+            $IsInserted = \app\database\DB::connection()->insert('products', $FieldsAndValues);
             if (!$IsInserted) {
                 return $this->json($response, ['status' => false, 'msg' => 'Restrição: ' . $IsInserted, 'id' => 0], 500);
             }
@@ -69,14 +71,15 @@ final class Product extends Base
             return $this->json($response, ['status' => false, 'msg' => 'Por favor informe o ID do registro', 'id' => 0], 403);
         }
         $FieldsAndValues = [
-            'fantasia'     => $form['nomeExibicao'],
-            'razao_social' => $form['nomeLegal']        ?? null,
-            'cnpj'         => $form['numeroDocumento']  ?? null,
-            'ie'           => $form['registroSecundario'] ?? null,
-            'ativo'        => (int)(($form['ativo']        ?? '') === 'true'),
+            'nome'     => $form['nome'],
+            'codigo_barra' => $form['codigo_barra']          ?? null,
+            'unidade'         => $form['unidade']    ?? null,
+            'preco_compra'           => $form['preco_compra'] ?? null,
+            'preco_venda'         => $form['preco_venda'] ?? null,
+            'ativo'         => (int)(($form['ativo']         ?? '') === 'true'),
         ];
         try {
-            $IsUpdated = \app\database\DB::connection()->update('enterprise', $FieldsAndValues, ['id' => $id]);
+            $IsUpdated = \app\database\DB::connection()->update('products', $FieldsAndValues, ['id' => $id]);
             if (!$IsUpdated) {
                 return $this->json($response, ['status' => false, 'msg' => 'Restrição: ' . $IsUpdated, 'id' => 0], 403);
             }
@@ -93,7 +96,7 @@ final class Product extends Base
             return $this->json($response, ['status' => false, 'msg' => 'Informe o código do cliente', 'id' => 0], 403);
         }
         try {
-            $IsDeleted = \app\database\DB::connection()->delete('enterprise', ['id' => $id]);
+            $IsDeleted = \app\database\DB::connection()->delete('products', ['id' => $id]);
             if (!$IsDeleted) {
                 return $this->json($response, ['status' => false, 'msg' => 'Restrição: ' . $IsDeleted, 'id' => $id], 403);
             }
@@ -113,11 +116,11 @@ final class Product extends Base
 
         $columns = [
             0 => 'id',
-            1 => 'fantasia',
-            2 => 'cnpj',
-            3 => 'ie',
-            4 => 'criado_em',
-            5 => 'atualizado_em',
+            1 => 'nome',
+            2 => 'codigo_barra',
+            3 => 'unidade',
+            4 => 'preco_compra',
+            5 => 'preco_venda',
         ];
 
         $posField = (isset($form['order'][0]['column']) && isset($columns[(int) $form['order'][0]['column']]))
@@ -132,11 +135,11 @@ final class Product extends Base
         try {
             # Total geral DataTables: recordsTotal
             $totalRecords = (int) \app\database\DB::select('COUNT(*)')
-                ->from('enterprise')
+                ->from('products')
                 ->fetchOne();
 
             # Query principal com WHERE opcional
-            $query = \app\database\DB::select('*')->from('enterprise');
+            $query = \app\database\DB::select('*')->from('products');
 
             if (!is_null($term) && $term !== '') {
                 $query->setParameter('term', '%' . $term . '%');
@@ -156,7 +159,7 @@ final class Product extends Base
                 ->fetchOne();
 
             # Resultados paginados e ordenados
-            $enterprises = $query
+            $products = $query
                 ->orderBy($orderField, $orderType)
                 ->setFirstResult($start)
                 ->setMaxResults($length)
@@ -165,18 +168,17 @@ final class Product extends Base
             # Formatação para o DataTables
             # Formatação para o DataTables
             $rows = [];
-            foreach ($enterprises as $key => $value) {
+            foreach ($products as $key => $value) {
                 $rows[$key] = [
                     $value['id'],
-                    $value['fantasia']     ?? '',
-                    $value['razao_social'] ?? '',
-                    $value['cnpj']         ?? '',
-                    $value['ie']           ?? '',
+                    $value['nome']     ?? '',
+                    $value['codigo_barra'] ?? '',
+                    $value['unidade']         ?? '',
+                    $value['preco_compra']           ?? '',
+                    $value['preco_venda']           ?? '',
                     ($value['ativo'] == true) ? 'Ativo' : 'Inativo',
-                    (new \DateTime($value['criado_em']))->format('d/m/Y H:i:s'),
-                    (new \DateTime($value['atualizado_em']))->format('d/m/Y H:i:s'),
                     "<td>
-            <a class='btn btn-sm btn-warning' href='/empresa/detalhes/" . $value['id'] . "'>
+            <a class='btn btn-sm btn-warning' href='/produto/detalhes/" . $value['id'] . "'>
                 <i class='fa-solid fa-pen-to-square'></i> Editar
             </a>
             <button type='button' class='btn btn-sm btn-danger' onclick='ShowModal(" . $value['id'] . ");'>

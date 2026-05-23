@@ -2,12 +2,13 @@ import DataTables from '../components/data-tables.js';
 import Requests from '../components/requests.js';
 
 const Id = document.getElementById('id');
-const table = DataTables.SetId('table-enterprise').setRequestVariables([]).post('/empresa/listingdata');
+const table = DataTables.SetId('table-product').setRequestVariables([]).post('/produto/listingdata');
 
-async function deleteEnterprise() {
+
+async function deleteProduct() {
     const requests = new Requests();
     try {
-        const response = await requests.setForm('form').post('/empresa/delete');
+        const response = await requests.setForm('form').post('/produto/delete');
         return response;
     } catch (error) {
         Swal.fire({
@@ -32,7 +33,7 @@ async function ShowModal(id) {
         confirmButtonText: "Excluir"
     }).then(async (result) => {
         if (result.isConfirmed) {
-            const response = await deleteEnterprise();
+            const response = await deleteProduct();
             if (!response.status) {
                 Swal.fire({
                     title: "Erro!",

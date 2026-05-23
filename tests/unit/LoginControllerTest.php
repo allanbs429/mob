@@ -34,7 +34,7 @@ test('preRegister com dados validos retorna 200 com status true', function () {
 
     expect($json['status'])->toBeTrue();
 
-    expect($json['msg'])->toContain('Usuário criado com sucesso');
+    expect($json['msg'])->toContain('Pré-cadastro realizado com sucesso!');
 
 
 });
