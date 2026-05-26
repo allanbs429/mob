@@ -18,7 +18,7 @@ final class Version20260518204128 extends AbstractMigration
     {
         $table = $schema->createTable('products');
 
-        $table->addColumn('id',                   'bigint',   ['autoincrement' => true, 'unsigned' => true, 'notnull' => true]);
+        $table->addColumn('id',                   'bigint',   ['autoincrement' => true, 'notnull' => true]);
         $table->addColumn('nome',                 'string',   ['length' => 255, 'notnull' => true]);
         $table->addColumn('codigo_barra',         'string',   ['length' => 255, 'notnull' => false]);
         $table->addColumn('unidade',              'string',   ['length' => 18,  'notnull' => true]);

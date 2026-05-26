@@ -11,11 +11,11 @@ test('insertProduct com dados validos retorna 200 com status true', function () 
         ->createRequest('POST', '/produto/insert')
         ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
         ->withParsedBody([
-            'nome' => 'Baleia',
-            'codigo_barra' => '234234',
+            'nome' => 'Carne de baleia',
+            'codigo_barra' => '235234',
             'unidade' => '5',
-            'preco_compra' => '1000.00',
-            'preco_venda' => '2000.00',
+            'preco_compra' => '2000.00',
+            'preco_venda' => '1000.00',
             'descricao' => 'Carne de baleia',
             'ativo' => 'true'
         ]);
